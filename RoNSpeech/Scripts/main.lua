@@ -139,7 +139,7 @@ local function issueBreachShotgun()
 	local Pawn= PlayerController.Pawn
 	 Target=LastDoor
 	 LastDoor=nil
-	local CurrTeamType=PlayerController.Pawn.SwatCommandWidget.ActiveTeamType
+	local CurrTeamType = PlayerController.Pawn.SwatCommandWidget.ActiveTeamType
 	if Target~=nil then
 		if string.find(Target:GetFullName(),"Door") then
 		
@@ -467,6 +467,129 @@ local function UpdateValues()
 	end
 end
 
+local function issueWedge()
+    local Pawn   = PlayerController.Pawn
+    local Target = LastDoor
+    LastDoor = nil
+
+    if Target ~= nil and string.find(Target:GetFullName(), "Door") then
+        local CurrTeamType = Pawn.SwatCommandWidget.ActiveTeamType
+
+        CommandStruct_C:GiveWedgeDoorCommand(
+            Target,
+            CurrTeamType,
+            Pawn:K2_GetActorLocation(),
+            Pawn:GetActorUpVector()
+        )
+    end
+end
+
+local function issueRemoveWedge()
+    local Pawn   = PlayerController.Pawn
+    local Target = LastDoor
+    LastDoor = nil
+
+    if Target ~= nil and string.find(Target:GetFullName(), "Door") then
+        local CurrTeamType = Pawn.SwatCommandWidget.ActiveTeamType
+
+        CommandStruct_C:GiveRemoveWedgeCommand(
+            Target,
+            CurrTeamType,
+            Pawn:K2_GetActorLocation(),
+            Pawn:GetActorUpVector()
+        )
+    end
+end
+
+local function issueDeployGrenade(grenadeClass, distance)
+    local Pawn = PlayerController and PlayerController.Pawn
+    if not Pawn or not Pawn:IsValid() then
+        return
+    end
+    if not grenadeClass or not grenadeClass:IsValid() then
+        return
+    end
+
+    local widget = Pawn.SwatCommandWidget
+    if not widget or not widget:IsValid() then
+        return
+    end
+
+    local CurrTeamType = widget.ActiveTeamType
+    if CurrTeamType == nil then
+        return
+    end
+
+    local ctx = widget.ContextualData   -- FHitResult
+    local targetLoc = nil
+
+    if ctx then
+        local loc = ctx.Location or ctx.ImpactPoint
+        if loc then
+            -- convert FHitResult's FVector (userdata) into a Lua table FVector
+            targetLoc = {
+                X = loc.X,
+                Y = loc.Y,
+                Z = loc.Z,
+            }
+        end
+    end
+
+    -- Fallback if contextual data isn't valid
+    if not targetLoc then
+        local origin  = Pawn:K2_GetActorLocation()
+        local forward = Pawn:GetActorForwardVector()
+        local dist    = distance or 600.0
+
+        targetLoc = {
+            X = origin.X + forward.X * dist,
+            Y = origin.Y + forward.Y * dist,
+            Z = origin.Z,
+        }
+    end
+
+    CommandStruct_C:GiveDeployGrenadeAtLocation(
+        CurrTeamType,
+        targetLoc,
+        grenadeClass
+    )
+end
+
+local function issueThrowFlash()
+    local Grenade = StaticFindObject("/Game/Blueprints/Items/WeaponsRevised/Grenade_Flashbang_V2.Grenade_Flashbang_V2_C")
+    if not Grenade or not Grenade:IsValid() then
+        print("Flash grenade class not found")
+        return
+    end
+
+    issueDeployGrenade(Grenade, 250.0)
+end
+
+local function issueThrowStinger()
+    local Grenade = StaticFindObject("/Game/Blueprints/Items/WeaponsRevised/Grenade_Stinger_V2.Grenade_Stinger_V2_C")
+    if not Grenade or not Grenade:IsValid() then
+        print("Stinger grenade class not found")
+        return
+    end
+
+    issueDeployGrenade(Grenade, 250.0)
+end
+
+local function issueThrowGas()
+    local Grenade = StaticFindObject("/Game/Blueprints/Items/WeaponsRevised/Grenade_CSGas_V2.Grenade_CSGas_V2_C")
+    if not Grenade or not Grenade:IsValid() then
+        print("Gas grenade class not found")
+        return
+    end
+
+    issueDeployGrenade(Grenade, 250.0)
+end
+
+
+
+
+
+
 
 RegisterHook("/Script/ReadyOrNot.PlayerCharacter:Server_UpdateCameraRotationRate", function (Context) end,
 function () UpdateValues() end
@@ -494,15 +617,25 @@ RegisterKeyBind(Key.F22, 		function() issueModifier2() end )
 RegisterKeyBind(Key.MULTIPLY, 	function() issueUnlock() end )
 RegisterKeyBind(Key.PAGE_DOWN,	function() issueOpenDoor() end ) 
 RegisterKeyBind(Key.F8,  		function() issueYell() end ) 
-RegisterKeyBind(Key.F14, 
-	function() 
-		if ModiKey1 then
-			issueCover()
-			ModiKey1=false
-		else
-			issueDisarmTrap()
-		end	
-	end)  
+RegisterKeyBind(Key.F14, function()
+    if ModiKey1 and ModiKey2 then
+        issueWedge()
+        ModiKey1 = false
+        ModiKey2 = false
+
+    elseif ModiKey2 then
+        issueRemoveWedge()
+        ModiKey2 = false
+
+    elseif ModiKey1 then
+        issueCover()
+        ModiKey1 = false
+
+    else
+        issueDisarmTrap()
+    end
+end)
+
 RegisterKeyBind(Key.F15, function() issueBreachFlash()	end )   
 RegisterKeyBind(Key.SEVEN, 		function() issueHold() end )
 RegisterKeyBind(Key.PAGE_UP, 	function() issueFallIn() end )
@@ -515,7 +648,26 @@ RegisterKeyBind(Key.SUBTRACT, 	function() issueBreachC2() end )
 RegisterKeyBind(Key.F16, 		function() issueBreachGas() end )
 RegisterKeyBind(Key.F17, 		function() issueBreachStinger() end )
 RegisterKeyBind(Key.F18, 		function() issueBreachShotgun() end )
-RegisterKeyBind(Key.F19, 		function() issueBreachShotgunFlash() end )
+RegisterKeyBind(Key.F19, function()
+    if ModiKey1 and ModiKey2 then
+        issueThrowGas()
+        ModiKey1 = false
+        ModiKey2 = false
+
+    elseif ModiKey1 and not ModiKey2 then
+        issueThrowFlash()
+        ModiKey1 = false
+
+    elseif ModiKey2 and not ModiKey1 then
+        issueThrowStinger()
+        ModiKey2 = false
+
+    else
+        issueBreachShotgunFlash()
+    end
+end)
+
+
 RegisterKeyBind(Key.F21, 		function() issueBreachShotgunGas() end )
 RegisterKeyBind(Key.F24, 		function() issueBreachShotgunStinger() end )
 RegisterKeyBind(Key.F20, 		function() issueRestrain() end )
