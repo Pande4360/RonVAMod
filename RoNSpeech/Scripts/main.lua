@@ -76,7 +76,11 @@ local function issueFallIn()
 		
 	else
 		local Pawn= PlayerController.Pawn
-		CommandStruct_C:GiveMoveCommand(CurrTeamType, Pawn:K2_GetActorLocation())
+		local Location= {}
+		Location.X =	Pawn.SwatCommandWidget.ContextualData.Location.X
+		Location.Y =	Pawn.SwatCommandWidget.ContextualData.Location.Y
+		Location.Z =	Pawn.SwatCommandWidget.ContextualData.Location.Z
+		CommandStruct_C:GiveMoveCommand(CurrTeamType, Location )
 		ModiKey1=false
 	end
 
@@ -363,7 +367,14 @@ local function issueCover()
 	
 		local CurrTeamType=PlayerController.Pawn.SwatCommandWidget.ActiveTeamType
 		
-		CommandStruct_C:GiveCoverAreaCommand(CurrTeamType, Pawn:K2_GetActorLocation())
+		local Location= {}
+		Location.X =	Pawn.SwatCommandWidget.ContextualData.Location.X
+		Location.Y =	Pawn.SwatCommandWidget.ContextualData.Location.Y
+		Location.Z =	Pawn.SwatCommandWidget.ContextualData.Location.Z
+		CommandStruct_C:GiveMoveCommand(CurrTeamType, Location )
+		
+		
+		CommandStruct_C:GiveCoverAreaCommand(CurrTeamType, Location)
 	
 
 end
@@ -374,8 +385,11 @@ local function issueMoveCommand()
 	
 	
 		local CurrTeamType=PlayerController.Pawn.SwatCommandWidget.ActiveTeamType
-		
-		CommandStruct_C:GiveMoveCommand(CurrTeamType, Pawn:K2_GetActorLocation())
+			local Location= {}
+		Location.X =	Pawn.SwatCommandWidget.ContextualData.Location.X
+		Location.Y =	Pawn.SwatCommandWidget.ContextualData.Location.Y
+		Location.Z =	Pawn.SwatCommandWidget.ContextualData.Location.Z
+		CommandStruct_C:GiveMoveCommand(CurrTeamType, Location)
 	
 
 end
